@@ -60,8 +60,8 @@ def main():
     traces = {"K4": [sst], "K6": [sst], "Noise": [sst], "True": [sst], "Timestamp": [timestamp]}
     filters = {"K4": KalmanFilterSmallState(), "K6": KalmanFilterBigState()}
 
-    filters["K4"].update_hyps(5e-9, 1e-9)
-    filters["K6"].update_hyps(1e-15, 1e-14, 4e-14)
+    filters["K4"].update_hyps(7e-9, 3e-9)
+    filters["K6"].update_hyps(3e-15, 5e-14, 4e-13)
 
     props = [1, 1, 1, 1]
 

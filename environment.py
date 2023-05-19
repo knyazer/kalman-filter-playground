@@ -11,12 +11,12 @@ class Environment:
                 "Wrong environment name, should be one of circles-small, circles-big, straight or gravity"
             )
         self.ball_pos = np.array([0, 0], dtype=np.float32)
-        self.ball_vel = np.array([0.9, 0.2], dtype=np.float32)
+        self.ball_vel = np.array([np.pi / 4, -np.e / 7], dtype=np.float32)
         self.name = name
 
         if name == "circles-big":
             self.ball_pos = np.array([0.8, 0.0], dtype=np.float32)
-            self.ball_vel = np.array([0.0, 1.0], dtype=np.float32)
+            self.ball_vel = np.array([0.0, 5.0], dtype=np.float32)
         if name == "circles-small":
             self.ball_pos = np.array([0.3, 0.0], dtype=np.float32)
             self.ball_vel = np.array([0.0, 1.0], dtype=np.float32)

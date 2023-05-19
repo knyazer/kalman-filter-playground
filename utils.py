@@ -27,8 +27,8 @@ def draw_trace(img, trace, color, width):
 def render(traces, timestamp, props):
     img = np.zeros((SCREEN_SIZE, SCREEN_SIZE, 3), dtype=np.uint8)
     img[:, :, 1] = 80
-    now = traces["Timestamp"].index(timestamp)
-    ball_pos = traces["True"][now]
+    now = traces["Timestamp"].index(timestamp) + 1
+    ball_pos = traces["True"][now - 1]
     # draw the ball
     cv.circle(
         img,
