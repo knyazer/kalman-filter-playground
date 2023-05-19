@@ -1,9 +1,11 @@
-import cv2 as cv
 import sys
+
+import cv2 as cv
 import numpy as np
-from filters import KalmanFilterSmallState, KalmanFilterBigState
 from environment import Environment
-from utils import render, draw_trace
+from filters import KalmanFilterBigState, KalmanFilterSmallState
+from utils import render
+
 
 # tuning hyps, means that we are running simulation for lets say 1000 steps (18 seconds) and then compute integral of L1 error, which is effectively an area :) seems like L1 is more meaningful in this setting
 def estimate(filt, steps, *args):
@@ -27,6 +29,7 @@ def estimate(filt, steps, *args):
 
     return err
 
+
 def tune(filt, num_of_args):
     final_hyps = []
     # estimate every error for logs of 1.3
@@ -47,7 +50,10 @@ def tune(filt, num_of_args):
 
     filt.update_hyps(*final_hyps)
 
+
 env = Environment(["circles-small", "circles-big", "straight"][2])
+
+
 def main():
     sst = env.observe()
     timestamp = 0
@@ -83,42 +89,43 @@ def main():
             traces["Timestamp"].append(timestamp)
 
         # draw the trace, as a set of lines
-        cv.imshow('world', render(traces, timestamp, props))
+        cv.imshow("world", render(traces, timestamp, props))
 
         # if space pressed, pause the simulation
         key = cv.waitKey(5)
-        if key == ord(' '):
+        if key == ord(" "):
             pause = not pause
         # if escape pressed, exit
         if key == 27:
             break
-        if key == ord('l') or key == ord('k'):
+        if key == ord("l") or key == ord("k"):
             pause = True
             timestamp += 1
 
-        if key == ord('j') or key == ord('h'):
+        if key == ord("j") or key == ord("h"):
             pause = True
             timestamp -= 1
 
-        if key == ord('1'):
+        if key == ord("1"):
             props[0] = 1 - props[0]
-        if key == ord('2'):
+        if key == ord("2"):
             props[1] = 1 - props[1]
-        if key == ord('3'):
+        if key == ord("3"):
             props[2] = 1 - props[2]
-        if key == ord('4'):
+        if key == ord("4"):
             props[3] = 1 - props[3]
 
         # if window closed - exit
-        if cv.getWindowProperty('world', cv.WND_PROP_VISIBLE) < 1:
+        if cv.getWindowProperty("world", cv.WND_PROP_VISIBLE) < 1:
             break
 
-if __name__ == '__main__':
+
+if __name__ == "__main__":
     # Check the first argument, and if it is a number, use it as an environment id
     if len(sys.argv) > 1:
         try:
             env = Environment(["circles-small", "circles-big", "straight", "gravity"][int(sys.argv[1])])
-        except:
+        except ValueError:
             print("Invalid environment id")
             exit(1)
     main()

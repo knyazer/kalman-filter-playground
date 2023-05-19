@@ -5,18 +5,41 @@ SCREEN_SIZE = 700
 
 HALF_SCREEN_SIZE = SCREEN_SIZE // 2
 
+
 def draw_trace(img, trace, color, width):
     for i in range(len(trace) - 1):
-        cv.line(img, (int(trace[i][0] * HALF_SCREEN_SIZE + HALF_SCREEN_SIZE), int(trace[i][1] * HALF_SCREEN_SIZE + HALF_SCREEN_SIZE)), (int(trace[i + 1][0] * HALF_SCREEN_SIZE + HALF_SCREEN_SIZE), int(trace[i + 1][1] * HALF_SCREEN_SIZE + HALF_SCREEN_SIZE)), color, width)
+        cv.line(
+            img,
+            (
+                int(trace[i][0] * HALF_SCREEN_SIZE + HALF_SCREEN_SIZE),
+                int(trace[i][1] * HALF_SCREEN_SIZE + HALF_SCREEN_SIZE),
+            ),
+            (
+                int(trace[i + 1][0] * HALF_SCREEN_SIZE + HALF_SCREEN_SIZE),
+                int(trace[i + 1][1] * HALF_SCREEN_SIZE + HALF_SCREEN_SIZE),
+            ),
+            color,
+            width,
+        )
     return img
+
 
 def render(traces, timestamp, props):
     img = np.zeros((SCREEN_SIZE, SCREEN_SIZE, 3), dtype=np.uint8)
-    img[:,:,1] = 80
+    img[:, :, 1] = 80
     now = traces["Timestamp"].index(timestamp)
     ball_pos = traces["True"][now]
     # draw the ball
-    cv.circle(img, (int(ball_pos[0] * HALF_SCREEN_SIZE + HALF_SCREEN_SIZE), int(ball_pos[1] * HALF_SCREEN_SIZE + HALF_SCREEN_SIZE)), 10, (0, 0, 255), -1)
+    cv.circle(
+        img,
+        (
+            int(ball_pos[0] * HALF_SCREEN_SIZE + HALF_SCREEN_SIZE),
+            int(ball_pos[1] * HALF_SCREEN_SIZE + HALF_SCREEN_SIZE),
+        ),
+        10,
+        (0, 0, 255),
+        -1,
+    )
     # draw the traces
     low = max(now - 60, 0)
     if props[0] == 1:
