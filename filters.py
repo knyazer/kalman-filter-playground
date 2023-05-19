@@ -1,8 +1,10 @@
 import numpy as np
 
+sigma = 0.03
+
 class KalmanFilterBigState:
     # the observation covariance matrix
-    R = np.eye(2, dtype=np.float64) * 0.04
+    R = np.eye(2, dtype=np.float64) * sigma * sigma
 
     # the state covariance matrix
     Q = np.eye(6, dtype=np.float64) * 1e-12 # In our case it is super non-gaussian, but we don't care lolz
@@ -11,8 +13,8 @@ class KalmanFilterBigState:
     dt = 18
 
     # the state transition matrix, 6x6
-    F = np.array([[1.0, 0.0, dt, 0.0, dt * dt / 2, 0.0],
-                  [0.0, 1.0, 0.0, dt, 0.0, dt * dt / 2],
+    F = np.array([[1.0, 0.0, dt, 0.0, dt * dt / 2.0, 0.0],
+                  [0.0, 1.0, 0.0, dt, 0.0, dt * dt / 2.0],
                   [0.0, 0.0, 1.0, 0.0, dt, 0.0],
                   [0.0, 0.0, 0.0, 1.0, 0.0, dt],
                   [0.0, 0.0, 0.0, 0.0, 1.0, 0.0],
@@ -83,7 +85,7 @@ class KalmanFilterBigState:
 
 class KalmanFilterSmallState:
     # the observation covariance matrix
-    R = np.eye(2, dtype=np.float64) * 0.04
+    R = np.eye(2, dtype=np.float64) * sigma * sigma
 
     # the state covariance matrix
     Q = np.eye(4, dtype=np.float64) * 1e-7 # In our case it is super non-gaussian, but we don't care lolz

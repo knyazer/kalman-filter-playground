@@ -1,12 +1,12 @@
 import numpy as np
 
 class Environment:
-    dt = 18
+    dt = 18.0
     name = "straight"
 
     def __init__(self, name):
-        if not name in ["circles-small", "circles-big", "straight"]:
-            raise ValueError("Wrong environment name")
+        if not name in ["circles-small", "circles-big", "straight", "gravity"]:
+            raise ValueError("Wrong environment name, should be one of circles-small, circles-big, straight or gravity")
         self.ball_pos = np.array([0, 0], dtype=np.float32)
         self.ball_vel = np.array([0.9, 0.2], dtype=np.float32)
         self.name = name
@@ -17,6 +17,9 @@ class Environment:
         if name == "circles-small":
             self.ball_pos = np.array([0.3, 0.0], dtype=np.float32)
             self.ball_vel = np.array([0.0, 1.0], dtype=np.float32)
+        if name == "gravity":
+            self.ball_pos = np.array([0.0, -0.8], dtype=np.float32)
+            self.ball_vel = np.array([0.0, 0.0], dtype=np.float32)
 
     def step(self):
         if self.name == "straight":
@@ -30,6 +33,10 @@ class Environment:
             # and then we need to normalize it
             self.ball_vel = self.ball_pos / np.linalg.norm(self.ball_pos)
             self.ball_vel = np.array([-self.ball_vel[1], self.ball_vel[0]], dtype=np.float32)
+        elif self.name == "gravity":
+            self.ball_pos = self.ball_pos + self.ball_vel * self.dt / 1000
+            self.ball_vel[1] = self.ball_vel[1] + 0.001 * self.dt
+            self.resolve_collisions()
 
         if self.name == "circles-big":
             # normalize the position to 0.8

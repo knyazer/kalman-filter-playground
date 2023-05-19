@@ -5,6 +5,48 @@ from filters import KalmanFilterSmallState, KalmanFilterBigState
 from environment import Environment
 from utils import render, draw_trace
 
+# tuning hyps, means that we are running simulation for lets say 1000 steps (18 seconds) and then compute integral of L1 error, which is effectively an area :) seems like L1 is more meaningful in this setting
+def estimate(filt, steps, *args):
+    env = Environment("gravity")
+    filt.reset()
+    filt.update_hyps(*args)
+    # warm up
+    for i in range(10):
+        env.step()
+        filt.update(env.observe())
+
+    # run the simulation
+    err = 0
+    for i in range(steps):
+        env.step()
+        filt.update(env.observe())
+        err += np.abs(env.ball_pos - filt.state[:2]).sum()
+        # and also don't forget velocity!
+        err += np.abs(env.ball_vel - filt.state[2:4]).sum() * 0.3
+    filt.reset()
+
+    return err
+
+def tune(filt, num_of_args):
+    final_hyps = []
+    # estimate every error for logs of 1.3
+    for i in range(num_of_args):
+        hyp = 1e-2
+        best_est = 10e50
+        best_hyp = hyp
+        while hyp > 1e-20:
+            inp = final_hyps + [hyp] * (num_of_args - i)
+            est = estimate(filt, 500, *inp)
+            hyp /= 1.4
+            if est < best_est:
+                best_est = est
+                best_hyp = hyp
+        final_hyps.append(best_hyp)
+        print("Best hyp for arg {} is {}".format(i, best_hyp))
+    print("Best estimate is {}".format(best_est))
+
+    filt.update_hyps(*final_hyps)
+
 env = Environment(["circles-small", "circles-big", "straight"][2])
 def main():
     sst = env.observe()
@@ -12,8 +54,10 @@ def main():
     traces = {"K4": [sst], "K6": [sst], "Noise": [sst], "True": [sst], "Timestamp": [timestamp]}
     filters = {"K4": KalmanFilterSmallState(), "K6": KalmanFilterBigState()}
 
-    filters["K4"].update_hyps(1e-9, 1e-7)
-    filters["K6"].update_hyps(1e-10, 1e-10, 1e-10)
+    filters["K4"].update_hyps(5e-9, 1e-9)
+    filters["K6"].update_hyps(1e-15, 1e-14, 4e-14)
+
+    props = [1, 1, 1, 1]
 
     pause = False
 
@@ -32,14 +76,14 @@ def main():
                 filt.update_dt(env.dt)
                 filt.update(z)
 
-            traces["K4"].append(filters["K4"].state)
-            traces["K6"].append(filters["K6"].state)
+            traces["K4"].append(filters["K4"].state[:2])
+            traces["K6"].append(filters["K6"].state[:2])
             traces["Noise"].append(z)
             traces["True"].append(env.ball_pos)
             traces["Timestamp"].append(timestamp)
 
         # draw the trace, as a set of lines
-        cv.imshow('world', render(traces, timestamp))
+        cv.imshow('world', render(traces, timestamp, props))
 
         # if space pressed, pause the simulation
         key = cv.waitKey(5)
@@ -56,6 +100,15 @@ def main():
             pause = True
             timestamp -= 1
 
+        if key == ord('1'):
+            props[0] = 1 - props[0]
+        if key == ord('2'):
+            props[1] = 1 - props[1]
+        if key == ord('3'):
+            props[2] = 1 - props[2]
+        if key == ord('4'):
+            props[3] = 1 - props[3]
+
         # if window closed - exit
         if cv.getWindowProperty('world', cv.WND_PROP_VISIBLE) < 1:
             break
@@ -64,7 +117,7 @@ if __name__ == '__main__':
     # Check the first argument, and if it is a number, use it as an environment id
     if len(sys.argv) > 1:
         try:
-            env = Environment(["circles-small", "circles-big", "straight"][int(sys.argv[1])])
+            env = Environment(["circles-small", "circles-big", "straight", "gravity"][int(sys.argv[1])])
         except:
             print("Invalid environment id")
             exit(1)
