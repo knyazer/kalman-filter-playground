@@ -21,8 +21,8 @@ class Environment:
             self.ball_pos = np.array([0.3, 0.0], dtype=np.float32)
             self.ball_vel = np.array([0.0, 1.0], dtype=np.float32)
         if name == "gravity":
-            self.ball_pos = np.array([0.0, -0.8], dtype=np.float32)
-            self.ball_vel = np.array([0.0, 0.0], dtype=np.float32)
+            self.ball_pos = np.array([0.0, -0.6], dtype=np.float32)
+            self.ball_vel = np.array([0.2, 0.0], dtype=np.float32)
 
     def step(self):
         if self.name == "straight":
