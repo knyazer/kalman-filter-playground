@@ -1,0 +1,8 @@
+K4 position covariance;66
+K4 velocity covariance;52
+K6 position covariance;66
+K6 velocity covariance;52
+K6 acceleration covariance;50
+Speed multiplier;17
+Choosing environment;3
+Noise sigma, 0.9^x;44

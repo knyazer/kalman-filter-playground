@@ -1,0 +1,4 @@
+SCREEN_SIZE = 700
+HALF_SCREEN_SIZE = SCREEN_SIZE // 2
+dt = 0.018
+filter_sigma = 0.03

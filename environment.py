@@ -4,9 +4,16 @@ import numpy as np
 class Environment:
     dt = 18.0
     name = "straight"
+    speed = 1.0
+    noise_sigma = 0.02
+
+    all_names = ["circles-small", "circles-big", "straight", "gravity"]
+
+    def set_speed(self, speed):
+        self.speed = speed
 
     def __init__(self, name):
-        if name not in ["circles-small", "circles-big", "straight", "gravity"]:
+        if name not in self.all_names:
             raise ValueError(
                 "Wrong environment name, should be one of circles-small, circles-big, straight or gravity"
             )
@@ -24,12 +31,22 @@ class Environment:
             self.ball_pos = np.array([0.0, -0.6], dtype=np.float32)
             self.ball_vel = np.array([0.2, 0.0], dtype=np.float32)
 
+    def set_env_index(self, index):
+        if index == None or index < 0 or index >= len(self.all_names):
+            raise ValueError("Wrong environment index")
+        self.__init__(self.all_names[index])
+
+    def set_noise_sigma(self, sigma):
+        self.noise_sigma = sigma
+
     def step(self):
+        # norm the velocity and scale by speed
+        self.ball_vel = self.ball_vel / np.linalg.norm(self.ball_vel) * self.speed
+        self.ball_pos = self.ball_pos + self.ball_vel * self.dt / 1000
+
         if self.name == "straight":
-            self.ball_pos = self.ball_pos + self.ball_vel * self.dt / 1000
             self.resolve_collisions()
         elif self.name == "circles-big" or self.name == "circles-small":
-            self.ball_pos = self.ball_pos + self.ball_vel * self.dt / 1000
             self.resolve_collisions()
             # to go in circles we need to rotate the velocity vector
             # so that it is perpendicular to the position vector
@@ -37,8 +54,7 @@ class Environment:
             self.ball_vel = self.ball_pos / np.linalg.norm(self.ball_pos)
             self.ball_vel = np.array([-self.ball_vel[1], self.ball_vel[0]], dtype=np.float32)
         elif self.name == "gravity":
-            self.ball_pos = self.ball_pos + self.ball_vel * self.dt / 1000
-            self.ball_vel[1] = self.ball_vel[1] + 0.001 * self.dt
+            self.ball_vel[1] = self.ball_vel[1] + 0.001 * self.dt * self.speed
             self.resolve_collisions()
 
         if self.name == "circles-big":
@@ -50,7 +66,7 @@ class Environment:
 
     def observe(self):
         # return ball position, +- gaussian noise
-        return self.ball_pos + np.random.normal(0, 0.02, 2)
+        return self.ball_pos + np.random.normal(0, self.noise_sigma, 2)
 
     def resolve_collisions(self):
         # check if ball goes out of the [-1, 1] range by x or y

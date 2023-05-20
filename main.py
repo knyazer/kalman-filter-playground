@@ -51,19 +51,60 @@ def tune(filt, num_of_args):
     filt.update_hyps(*final_hyps)
 
 
-env = Environment(["circles-small", "circles-big", "straight"][2])
+env = Environment("straight")
 
 
 def main():
-    sst = env.observe()
+    traces = {}
     timestamp = 0
-    traces = {"K4": [sst], "K6": [sst], "Noise": [sst], "True": [sst], "Timestamp": [timestamp]}
+    def switch_env(x):
+        env.set_env_index(x)
+        env.step()
+        
+        sst = env.observe()
+        full_state = np.zeros(6, dtype=np.float32)
+        full_state[:2] = sst[:2]
+        timestamp = 0
+        traces["K4"] = [sst]
+        traces["K6"] = [sst]
+        traces["Noise"] = [sst]
+        traces["True"] = [sst]
+        traces["Timestamp"] = [timestamp]
+        traces["K4-full"] = [full_state[:4]]
+        traces["K6-full"] = [full_state]
+        filters["K4"].reset()
+        filters["K6"].reset()
+
     filters = {"K4": KalmanFilterSmallState(), "K6": KalmanFilterBigState()}
+    switch_env(0)
 
-    filters["K4"].update_hyps(7e-9, 3e-9)
-    filters["K6"].update_hyps(3e-15, 5e-14, 4e-13)
+    filters["K4"].update_hyps(3e-6, 3e-3)
+    filters["K6"].update_hyps(1e-6, 1e-3, 6e-2)
 
-    props = [1, 1, 1, 1]
+    # trackbars for the filters
+    cv.namedWindow("world")
+    cv.createTrackbar("K4 position covariance", "world", 0, 200, lambda x: filters["K4"].update_hyps(100 * 0.8 ** x, filters["K4"].hyps[1]))
+    cv.createTrackbar("K4 velocity covariance", "world", 0, 200, lambda x: filters["K4"].update_hyps(filters["K4"].hyps[0], 100 * 0.8 ** x))
+
+    cv.createTrackbar("K6 position covariance", "world", 0, 200, lambda x: filters["K6"].update_hyps(100 * 0.8 ** x, filters["K6"].hyps[1], filters["K6"].hyps[2]))
+    cv.createTrackbar("K6 velocity covariance", "world", 0, 200, lambda x: filters["K6"].update_hyps(filters["K6"].hyps[0], 100 * 0.8 ** x, filters["K6"].hyps[2]))
+    cv.createTrackbar("K6 acceleration covariance", "world", 0, 200, lambda x: filters["K6"].update_hyps(filters["K6"].hyps[0], filters["K6"].hyps[1], 10 * 0.9 ** x))
+
+    cv.createTrackbar("Speed multiplier", "world", 1, 100, lambda x: env.set_speed((x + 1) / 10.0))
+    cv.createTrackbar("Choosing environment", "world", 0, 3, switch_env)
+    cv.createTrackbar("Noise sigma, 0.9^x", "world", 1, 100, lambda x: env.set_noise_sigma(0.9 ** x))
+
+    # load the old trackbars positions stored in the file
+    try:
+        with open("trackbars.txt", "r") as f:
+            for line in f:
+                name, pos = line.split(";")
+                cv.setTrackbarPos(name, "world", int(pos))
+    except FileNotFoundError:
+        pass
+
+
+    props = [1, 1, 1, 1, 1, 1]
 
     pause = False
 
@@ -79,7 +120,6 @@ def main():
             z = env.observe()
 
             for filt in filters.values():
-                filt.update_dt(env.dt)
                 filt.update(z)
 
             traces["K4"].append(filters["K4"].state[:2])
@@ -87,6 +127,8 @@ def main():
             traces["Noise"].append(z)
             traces["True"].append(env.ball_pos)
             traces["Timestamp"].append(timestamp)
+            traces["K4-full"].append(filters["K4"].state)
+            traces["K6-full"].append(filters["K6"].state)
 
         # draw the trace, as a set of lines
         cv.imshow("world", render(traces, timestamp, props))
@@ -114,10 +156,19 @@ def main():
             props[2] = 1 - props[2]
         if key == ord("4"):
             props[3] = 1 - props[3]
+        if key == ord("5"):
+            props[4] = 1 - props[4]
+        if key == ord("6"):
+            props[5] = 1 - props[5]
 
         # if window closed - exit
         if cv.getWindowProperty("world", cv.WND_PROP_VISIBLE) < 1:
             break
+
+    # store all the trackbars positions in the file
+    with open("trackbars.txt", "w") as f:
+        for name in ["K4 position covariance", "K4 velocity covariance", "K6 position covariance", "K6 velocity covariance", "K6 acceleration covariance", "Speed multiplier", "Choosing environment", "Noise sigma, 0.9^x"]:
+            f.write("{};{}\n".format(name, cv.getTrackbarPos(name, "world")))
 
 
 if __name__ == "__main__":
