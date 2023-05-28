@@ -22,9 +22,9 @@ def estimate(filt, steps, *args):
     for i in range(steps):
         env.step()
         filt.update(env.observe())
-        err += np.abs(env.ball_pos - filt.state[:2]).sum()
+        err += np.abs(env.get_true_pos() - filt.state[:2]).sum()
         # and also don't forget velocity!
-        err += np.abs(env.ball_vel - filt.state[2:4]).sum() * 0.3
+        err += np.abs(env.get_true_vel() - filt.state[2:4]).sum() * 0.3
     filt.reset()
 
     return err
@@ -83,15 +83,15 @@ def main():
 
     # trackbars for the filters
     cv.namedWindow("world")
-    cv.createTrackbar("K4 position covariance", "world", 0, 200, lambda x: filters["K4"].update_hyps(100 * 0.8 ** x, filters["K4"].hyps[1]))
+    cv.createTrackbar("K4 position covariance", "world", 0, 400, lambda x: filters["K4"].update_hyps(100 * 0.8 ** x, filters["K4"].hyps[1]))
     cv.createTrackbar("K4 velocity covariance", "world", 0, 200, lambda x: filters["K4"].update_hyps(filters["K4"].hyps[0], 100 * 0.8 ** x))
 
-    cv.createTrackbar("K6 position covariance", "world", 0, 200, lambda x: filters["K6"].update_hyps(100 * 0.8 ** x, filters["K6"].hyps[1], filters["K6"].hyps[2]))
+    cv.createTrackbar("K6 position covariance", "world", 0, 400, lambda x: filters["K6"].update_hyps(100 * 0.8 ** x, filters["K6"].hyps[1], filters["K6"].hyps[2]))
     cv.createTrackbar("K6 velocity covariance", "world", 0, 200, lambda x: filters["K6"].update_hyps(filters["K6"].hyps[0], 100 * 0.8 ** x, filters["K6"].hyps[2]))
     cv.createTrackbar("K6 acceleration covariance", "world", 0, 200, lambda x: filters["K6"].update_hyps(filters["K6"].hyps[0], filters["K6"].hyps[1], 10 * 0.9 ** x))
 
     cv.createTrackbar("Speed multiplier", "world", 1, 100, lambda x: env.set_speed((x + 1) / 10.0))
-    cv.createTrackbar("Choosing environment", "world", 0, 3, switch_env)
+    cv.createTrackbar("Choosing environment", "world", 0, len(Environment.get_variants()) - 1, switch_env)
     cv.createTrackbar("Noise sigma, 0.9^x", "world", 1, 100, lambda x: env.set_noise_sigma(0.9 ** x))
 
     # load the old trackbars positions stored in the file
@@ -106,35 +106,47 @@ def main():
 
     props = [1, 1, 1, 1, 1, 1]
 
+    abs_render = False
     pause = False
+    roi_size = 3.0
 
     while True:
         # simulate the "next" step
         if not pause:
             timestamp += 1
 
-        if not (timestamp in traces["Timestamp"]):
+        fut_timestamp = max(traces["Timestamp"])
+        iters = 0
+        while not ((timestamp + 100) in traces["Timestamp"]):
             env.step()
+
+            if env.wants_reset():
+                filters["K4"].reset()
+                filters["K6"].reset()
+                env.reset()
 
             # observe the ball position
             z = env.observe()
 
             for filt in filters.values():
+                filt.update_dt(env.get_dt())
                 filt.update(z)
 
             traces["K4"].append(filters["K4"].state[:2])
             traces["K6"].append(filters["K6"].state[:2])
             traces["Noise"].append(z)
-            traces["True"].append(env.ball_pos)
-            traces["Timestamp"].append(timestamp)
+            traces["True"].append(env.get_true_pos())
+            traces["Timestamp"].append(fut_timestamp + 1)
             traces["K4-full"].append(filters["K4"].state)
             traces["K6-full"].append(filters["K6"].state)
+            fut_timestamp += 1
+            iters += 1
 
         # draw the trace, as a set of lines
-        cv.imshow("world", render(traces, timestamp, props))
+        cv.imshow("world", render(traces, timestamp, props, roi_size, abs_render, env.get_dt()))
 
         # if space pressed, pause the simulation
-        key = cv.waitKey(5)
+        key = cv.waitKey(7)
         if key == ord(" "):
             pause = not pause
         # if escape pressed, exit
@@ -160,6 +172,14 @@ def main():
             props[4] = 1 - props[4]
         if key == ord("6"):
             props[5] = 1 - props[5]
+
+        if key == ord("v"):
+            abs_render = not abs_render
+
+        if key == ord("+"):
+            roi_size /= 1.5
+        if key == ord("-"):
+            roi_size *= 1.5
 
         # if window closed - exit
         if cv.getWindowProperty("world", cv.WND_PROP_VISIBLE) < 1:
