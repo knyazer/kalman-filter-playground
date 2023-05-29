@@ -2,6 +2,8 @@
 
 This repository contains some a Proof Of Concept, that shows that shows that using K4 for ball but K6 for robots makes sense. Also, it outlines the importance of the careful tuning of Kalman Filter.
 
+![docs/gif.gif](docs/gif.gif)
+
 ### Installation
 ```pip3 install -r requirements.txt```
 
