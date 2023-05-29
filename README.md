@@ -1,4 +1,4 @@
-# Simple benchmark for 6- and 4- state length Kalman Filters
+# Simple benchmark for 6- and 4- state Kalman Filters
 
 This repository contains some a Proof Of Concept, that shows that shows that using K4 for ball but K6 for robots makes sense. Also, it outlines the importance of the careful tuning of Kalman Filter.
 
